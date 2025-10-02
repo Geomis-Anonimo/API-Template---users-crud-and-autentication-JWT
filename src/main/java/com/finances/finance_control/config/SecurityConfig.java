@@ -1,0 +1,75 @@
+package com.finances.finance_control.config;
+
+import com.finances.finance_control.infra.exception.CustomAuthenticationEntryPoint;
+import com.finances.finance_control.repository.user.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private JwtFilter jwtFilter;
+
+    @Autowired
+    private CustomAuthenticationEntryPoint customEntryPoint;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customEntryPoint)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/login", "/api/users").permitAll()
+                        .requestMatchers("/api/dashboard").authenticated()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * Busca por email ou username, pode vir um ou outro do front. Os dois são únicos no banco de dados
+     *
+     * @param userRepository
+     * @return
+     */
+    @Bean
+    public UserDetailsService userDetailsService(UserRepository userRepository) {
+        return emailOrUsername -> {
+            return userRepository.findByEmailOrUsername(emailOrUsername)
+                    .orElseThrow(() -> new UsernameNotFoundException(
+                            "Usuário não encontrado com: " + emailOrUsername
+                    ));
+        };
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+}
