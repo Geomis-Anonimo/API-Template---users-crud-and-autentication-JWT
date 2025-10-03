@@ -1,5 +1,6 @@
 package com.finances.finance_control.dto.user;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 

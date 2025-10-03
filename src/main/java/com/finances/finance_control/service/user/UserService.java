@@ -8,6 +8,7 @@ import com.finances.finance_control.entity.user.Email;
 import com.finances.finance_control.entity.user.User;
 import com.finances.finance_control.infra.exception.CustomException;
 import com.finances.finance_control.repository.user.UserRepository;
+import org.hibernate.validator.internal.constraintvalidators.hv.br.CPFValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

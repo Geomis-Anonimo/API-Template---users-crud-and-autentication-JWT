@@ -1,40 +1,55 @@
 package com.finances.finance_control.config;
 
-import com.finances.finance_control.service.jwt.TokenService;
+import com.finances.finance_control.service.auth.TokenJwtService;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.util.ArrayList;
+import java.io.IOException;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
+    @Lazy
     @Autowired
-    private TokenService tokenService;
+    private UserDetailsService userDetailsService;
+
+    @Autowired
+    private TokenJwtService tokenService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws jakarta.servlet.ServletException, java.io.IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain chain) throws ServletException, IOException {
 
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.replace("Bearer ", "");
+            String token = header.substring(7);
+
             try {
-                String email = tokenService.extractSubject(token);
-                SecurityContextHolder.getContext().setAuthentication(
-                        new UsernamePasswordAuthenticationToken(email, null, new ArrayList<>())
-                );
+                if (tokenService.validateToken(token)) {
+                    String username = tokenService.extractSubject(token);
+
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             } catch (Exception e) {
-                throw new BadCredentialsException("Invalid credentials", e);
+                SecurityContextHolder.clearContext();
+                logger.debug("JWT authentication failed: " + e.getMessage());
             }
         }
 

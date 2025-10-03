@@ -5,7 +5,6 @@ import com.finances.finance_control.dto.user.UserMapper;
 import com.finances.finance_control.dto.user.UserRequestDTO;
 import com.finances.finance_control.dto.user.UserResponseDTO;
 import com.finances.finance_control.entity.user.User;
-import com.finances.finance_control.infra.exception.CustomException;
 import com.finances.finance_control.service.user.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,19 +22,15 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@RequestBody UserRequestDTO userDTO) {
-        try {
             User user = UserMapper.toEntity(userDTO);
             User newUser = userService.create(user);
             UserResponseDTO responseDTO = UserMapper.toResponseDTO(newUser);
             return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Erro ao criar um novo usuário");
-        }
     }
 
-    @GetMapping
+    @GetMapping("/find-all")
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
+        System.out.println("Teste");
         List<UserResponseDTO> responseDTO = userService.findAll();
         if (responseDTO.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -43,13 +38,13 @@ public class UserController {
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/find/{id}")
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
         UserResponseDTO userResponse = userService.findById(id);
         return new ResponseEntity<>(userResponse, HttpStatus.OK);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<UserResponseDTO> updateUser(
             @PathVariable Long id,
             @RequestBody @Valid UpdateUserRequestDTO updateRequest) {

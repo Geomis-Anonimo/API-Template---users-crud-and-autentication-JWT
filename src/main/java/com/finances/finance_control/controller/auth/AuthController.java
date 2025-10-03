@@ -1,37 +1,44 @@
 package com.finances.finance_control.controller.auth;
 
+import com.finances.finance_control.dto.auth.AuthResponseDTO;
 import com.finances.finance_control.dto.auth.LoginRequest;
-import com.finances.finance_control.dto.jwt.JwtResponse;
-import com.finances.finance_control.service.jwt.TokenService;
+import com.finances.finance_control.dto.auth.JwtResponse;
+import com.finances.finance_control.infra.exception.CustomException;
+import com.finances.finance_control.service.auth.AuthService;
+import com.finances.finance_control.service.auth.TokenJwtService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/login")
+@RequestMapping("/api")
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;
+    private AuthService authService;
 
     @Autowired
-    private TokenService tokenService;
+    private TokenJwtService tokenService;
 
-    @PostMapping()
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmailOrUsername(), loginRequest.getPassword()
-                )
+    @Value("${jwt.expiration}")
+    private long jwtExpiration;
+
+    @PostMapping("/login")
+    public ResponseEntity<JwtResponse> login(@RequestBody LoginRequest loginRequest) {
+        AuthResponseDTO dataResponse = authService.authenticate(
+                loginRequest.getEmailOrUsername(),
+                loginRequest.getPassword()
         );
 
-        String jwt = tokenService.generateToken(authentication.getName());
-        return ResponseEntity.ok(new JwtResponse(jwt));
+        if (!dataResponse.isStatus()) {
+            throw new CustomException(401, "E-mail ou senha incorretos");
+        }
+
+        String jwt = tokenService.generateToken(dataResponse.getEmail());
+        return ResponseEntity.ok(new JwtResponse("Bearer", jwt, jwtExpiration));
     }
 }
