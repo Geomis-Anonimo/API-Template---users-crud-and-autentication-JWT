@@ -34,6 +34,10 @@ public class User implements UserDetails {
     @Embedded
     private CPF cpf;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.USER;
+
     @Column(nullable = true)
     private boolean isInactive;
 

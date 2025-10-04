@@ -9,6 +9,8 @@ import com.finances.finance_control.service.auth.TokenJwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +29,9 @@ public class AuthController {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
+    @Autowired
+    private UserDetailsService userDetailsService;
+
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> login(@RequestBody LoginRequest loginRequest) {
         AuthResponseDTO dataResponse = authService.authenticate(
@@ -38,7 +43,10 @@ public class AuthController {
             throw new CustomException(401, "E-mail ou senha incorretos");
         }
 
-        String jwt = tokenService.generateToken(dataResponse.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(dataResponse.getUsername());
+
+        String jwt = tokenService.generateToken(userDetails);
+
         return ResponseEntity.ok(new JwtResponse("Bearer", jwt, jwtExpiration));
     }
 }

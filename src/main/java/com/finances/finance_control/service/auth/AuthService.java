@@ -28,6 +28,6 @@ public class AuthService {
             return new AuthResponseDTO(false, null);
         }
 
-        return new AuthResponseDTO(true, user.get().getEmail().getEmailAddress());
+        return new AuthResponseDTO(true, user.get().getUsername());
     }
 }

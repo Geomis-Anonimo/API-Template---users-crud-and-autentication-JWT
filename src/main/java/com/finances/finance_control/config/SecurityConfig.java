@@ -35,10 +35,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/login/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-                        .requestMatchers("/api/users/**").authenticated()
-                        .anyRequest().authenticated()
+                    .requestMatchers("/api/login/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                    .requestMatchers("/api/wallets/my-wallet").authenticated()
+                    .requestMatchers("/api/wallets/**").hasRole("ADMIN") // ← Agora funciona!
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                    .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
+                    .requestMatchers("/api/users/**").authenticated()
+                    .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
