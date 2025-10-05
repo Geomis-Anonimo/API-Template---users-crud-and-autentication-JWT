@@ -30,7 +30,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtFilter,
+                                                CustomAuthenticationEntryPoint customEntryPoint,
+                                                CustomAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -43,6 +45,10 @@ public class SecurityConfig {
                     .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
                     .requestMatchers("/api/users/**").authenticated()
                     .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(customEntryPoint)    // 401 - Não autenticado
+                        .accessDeniedHandler(accessDeniedHandler)      // 403 - Sem permissão
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
